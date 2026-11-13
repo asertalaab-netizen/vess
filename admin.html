@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة تحكم VESSENS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --card: #fbf9f6;
+      --bronze: #7a5832;
+      --bronze-dark: #4f371c;
+      --border: #dfd6c9;
+      --text: #2c241d;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 16px; max-width: 900px; margin: auto; }
+    
+    .header { display: flex; justify-content: space-between; align-items: center; background: var(--card); padding: 14px 18px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 18px; }
+    .panel { background: var(--card); padding: 18px; border-radius: 14px; border: 1px solid var(--border); margin-bottom: 18px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: #fff; margin-top: 4px; margin-bottom: 12px; font-size: 14px; }
+    label { font-size: 13px; font-weight: 700; color: var(--bronze-dark); }
+    
+    .btn { background: var(--bronze-dark); color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; }
+    .btn-danger { background: #a83232; padding: 5px 10px; font-size: 12px; width: auto; }
+    .btn-edit { background: var(--bronze); padding: 5px 10px; font-size: 12px; width: auto; }
+    
+    .size-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); gap: 10px; }
+    .item-row img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #eee; }
+    .hidden { display: none; }
+    hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
+  </style>
+</head>
+<body>
+
+  <div id="dashboard">
+    <div class="header">
+      <h2 style="color:var(--bronze-dark); font-size:18px;">لوحة تحكم VESSENS</h2>
+      <a href="index.html" target="_blank" style="color:var(--bronze); font-weight:700; font-size:13px;">معاينة الموقع ↗</a>
+    </div>
+
+    <!-- قسم إدارة المنتجات -->
+    <div class="panel">
+      <h3 id="formTitle" style="margin-bottom:12px; color:var(--bronze-dark);">إضافة عطر جديد ونوتات العطر</h3>
+      <input type="hidden" id="editId" />
+      <input type="hidden" id="pImageUrl" />
+      
+      <div class="grid-2">
+        <div>
+          <label>اسم العطر</label>
+          <input type="text" id="pName" placeholder="مثال: Stronger With You" />
+        </div>
+        <div>
+          <label>القسم</label>
+          <select id="pCat">
+            <option value="men">عطور رجالي (For Him)</option>
+            <option value="women">عطور حريمي (For Her)</option>
+            <option value="bundles">عروض وباكدجات (Bundles)</option>
+          </select>
+        </div>
+      </div>
+
+      <label>نوتات العطر / وصف المكونات</label>
+      <input type="text" id="pNotes" placeholder="مثال: برغموت، فانيليا، أخشاب العنبر" />
+
+      <div style="background:#f2ece4; padding:12px; border-radius:10px; margin-bottom:12px;">
+        <label style="display:block; margin-bottom:6px;">الأحجام والأسعار</label>
+        <div id="sizesContainer"></div>
+        <button type="button" onclick="addSizeRow()" style="background:var(--bronze); color:#fff; border:none; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:700;">+ إضافة حجم وسعر جديد</button>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>الشارة (Badge)</label>
+          <select id="pTag">
+            <option value="">بدون شارة</option>
+            <option value="الأكثر مبيعاً">الأكثر مبيعاً</option>
+            <option value="نزل جديد">نزل جديد</option>
+          </select>
+        </div>
+        <div>
+          <label>ترتيب الأكثر مبيعاً</label>
+          <input type="number" id="pBest" value="5" />
+        </div>
+      </div>
+
+      <label>صورة العطر (اختر من معرض الموبايل)</label>
+      <input type="file" id="imageFile" accept="image/*" style="background:#fff; padding:8px;" />
+
+      <button class="btn" onclick="saveProduct()" id="saveProdBtn" style="margin-top:10px;">حفظ ونشر العطر في الموقع</button>
+      <button class="btn hidden" id="cancelEditBtn" onclick="resetForm()" style="background:#777; margin-top:8px;">إلغاء التعديل</button>
+    </div>
+
+    <!-- قسم إدارة وتقييمات العملاء بالصور -->
+    <div class="panel" style="border: 2px dashed var(--bronze);">
+      <h3 style="margin-bottom:12px; color:var(--bronze-dark);">⭐ إضافة تقييم عميل جديد (مع صورة أو سكرين شوت)</h3>
+      
+      <div class="grid-2">
+        <div>
+          <label>اسم العميل</label>
+          <input type="text" id="revName" placeholder="مثال: محمد أحمد" />
+        </div>
+        <div>
+          <label>المنصة / مصدر التقييم</label>
+          <input type="text" id="revPlatform" value="WhatsApp Review" placeholder="WhatsApp / Instagram" />
+        </div>
+      </div>
+
+      <label>نص التقييم أو رأي العميل</label>
+      <textarea id="revMsg" rows="2" placeholder="العطر ثباته فظيع وجميل جداً تسلم ايديكم..."></textarea>
+
+      <label>صورة التقييم أو سكرين شوت (من معرض الموبايل)</label>
+      <input type="file" id="revImageFile" accept="image/*" style="background:#fff; padding:8px;" />
+
+      <button class="btn" onclick="saveReview()" id="saveRevBtn" style="margin-top:6px; background:var(--bronze);">إضافة التقييم للموقع</button>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-bottom:10px;">المنتجات الحالية في قاعدة البيانات</h3>
+      <div id="adminProductsList">جاري التحميل...</div>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-bottom:10px;">التقييمات الحالية في الموقع</h3>
+      <div id="adminReviewsList">جاري التحميل...</div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://vhizqkodylhobljpetgu.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_WC10R2Y80AB_rRMO4kQsXg_ZKYB8aBn';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    window.onload = function() {
+      loadProducts();
+      loadReviews();
+    };
+
+    function addSizeRow(size = '', price = '', oldPrice = '') {
+      const container = document.getElementById('sizesContainer');
+      const div = document.createElement('div');
+      div.className = 'size-row';
+      div.innerHTML = `
+        <input type="text" placeholder="الحجم (مثل: 50ml)" value="${size}" class="sz-name" style="margin:0;" />
+        <input type="number" placeholder="السعر (جنيه)" value="${price}" class="sz-price" style="margin:0;" />
+        <input type="number" placeholder="سعر قديم اختياري" value="${oldPrice}" class="sz-old" style="margin:0;" />
+        <button type="button" onclick="this.parentElement.remove()" style="background:#a83232; color:#fff; border:none; padding:10px; border-radius:6px; cursor:pointer;">✕</button>
+      `;
+      container.appendChild(div);
+    }
+
+    async function loadProducts() {
+      const { data } = await sb.from('vessens_products').select('*').order('id', { ascending: false });
+      document.getElementById('adminProductsList').innerHTML = (data || []).length === 0 
+        ? '<p style="color:#777; text-align:center;">مفيش منتجات مضافة.</p>'
+        : data.map(p => `
+          <div class="item-row">
+            <div style="display:flex; align-items:center; gap:10px;">
+              ${p.image_url ? `<img src="${p.image_url}">` : `<div style="width:48px;height:48px;background:#e6dfd5;border-radius:8px;"></div>`}
+              <div><strong>${p.name}</strong> <small style="color:#7a5832;">(${p.cat})</small></div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-edit" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})'>تعديل</button>
+              <button class="btn btn-danger" onclick="deleteProduct(${p.id})">حذف</button>
+            </div>
+          </div>
+        `).join('');
+    }
+
+    async function loadReviews() {
+      const { data } = await sb.from('vessens_reviews').select('*').order('id', { ascending: false });
+      document.getElementById('adminReviewsList').innerHTML = (data || []).length === 0 
+        ? '<p style="color:#777; text-align:center;">مفيش تقييمات مضافة.</p>'
+        : data.map(r => `
+          <div class="item-row">
+            <div style="display:flex; align-items:center; gap:10px;">
+              ${r.image_url ? `<img src="${r.image_url}">` : `<div style="width:48px;height:48px;background:#e6dfd5;border-radius:8px;"></div>`}
+              <div><strong>${r.customer_name}</strong> <small>(${r.platform})</small><br><small style="color:#555;">${r.message}</small></div>
+            </div>
+            <button class="btn btn-danger" onclick="deleteReview(${r.id})">حذف</button>
+          </div>
+        `).join('');
+    }
+
+    async function saveProduct() {
+      const name = document.getElementById('pName').value;
+      if (!name) return alert('اكتب اسم العطر!');
+      const btn = document.getElementById('saveProdBtn');
+      btn.innerText = "جاري الحفظ..."; btn.disabled = true;
+
+      let imageUrl = document.getElementById('pImageUrl').value;
+      const fileInput = document.getElementById('imageFile');
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const filePath = `prod_${Date.now()}.${file.name.split('.').pop()}`;
+        const { error: upErr } = await sb.storage.from('perfumes').upload(filePath, file);
+        if (!upErr) {
+          const { data } = sb.storage.from('perfumes').getPublicUrl(filePath);
+          imageUrl = data.publicUrl;
+        }
+      }
+
+      const sizesPrices = [];
+      document.querySelectorAll('.size-row').forEach(row => {
+        const size = row.querySelector('.sz-name').value;
+        const price = Number(row.querySelector('.sz-price').value);
+        const oldPrice = row.querySelector('.sz-old').value ? Number(row.querySelector('.sz-old').value) : null;
+        if (size && price) sizesPrices.push({ size, price, oldPrice });
+      });
+
+      const payload = {
+        name, cat: document.getElementById('pCat').value,
+        notes: document.getElementById('pNotes').value,
+        sizes_prices: sizesPrices, tag: document.getElementById('pTag').value,
+        bestseller: Number(document.getElementById('pBest').value) || 5,
+        image_url: imageUrl
+      };
+
+      const editId = document.getElementById('editId').value;
+      const res = editId ? await sb.from('vessens_products').update(payload).eq('id', editId) : await sb.from('vessens_products').insert([payload]);
+
+      if (res.error) alert("خطأ: " + res.error.message);
+      else { alert("تم الحفظ بنجاح!"); resetForm(); loadProducts(); }
+      btn.innerText = "حفظ ونشر العطر في الموقع"; btn.disabled = false;
+    }
+
+    async function saveReview() {
+      const customer_name = document.getElementById('revName').value;
+      const message = document.getElementById('revMsg').value;
+      if (!customer_name || !message) return alert('اكتب اسم العميل ونص التقييم!');
+      
+      const btn = document.getElementById('saveRevBtn');
+      btn.innerText = "جاري الحفظ..."; btn.disabled = true;
+
+      let imageUrl = '';
+      const fileInput = document.getElementById('revImageFile');
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const filePath = `rev_${Date.now()}.${file.name.split('.').pop()}`;
+        const { error: upErr } = await sb.storage.from('perfumes').upload(filePath, file);
+        if (!upErr) {
+          const { data } = sb.storage.from('perfumes').getPublicUrl(filePath);
+          imageUrl = data.publicUrl;
+        }
+      }
+
+      const payload = {
+        customer_name,
+        platform: document.getElementById('revPlatform').value || 'WhatsApp',
+        message,
+        image_url: imageUrl
+      };
+
+      const { error } = await sb.from('vessens_reviews').insert([payload]);
+      if (error) alert("خطأ: " + error.message);
+      else {
+        alert("تم إضافة التقييم بنجاح! ⭐");
+        document.getElementById('revName').value = '';
+        document.getElementById('revMsg').value = '';
+        document.getElementById('revImageFile').value = '';
+        loadReviews();
+      }
+      btn.innerText = "إضافة التقييم للموقع"; btn.disabled = false;
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm("حذف المنتج؟")) return;
+      await sb.from('vessens_products').delete().eq('id', id);
+      loadProducts();
+    }
+
+    async function deleteReview(id) {
+      if (!confirm("حذف التقييم؟")) return;
+      await sb.from('vessens_reviews').delete().eq('id', id);
+      loadReviews();
+    }
+
+    function editProduct(p) {
+      document.getElementById('formTitle').innerText = "تعديل: " + p.name;
+      document.getElementById('editId').value = p.id;
+      document.getElementById('pName').value = p.name;
+      document.getElementById('pCat').value = p.cat;
+      document.getElementById('pNotes').value = p.notes || '';
+      document.getElementById('pTag').value = p.tag || '';
+      document.getElementById('pBest').value = p.bestseller || 5;
+      document.getElementById('pImageUrl').value = p.image_url || '';
+      document.getElementById('cancelEditBtn').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function resetForm() {
+      document.getElementById('formTitle').innerText = "إضافة عطر جديد ونوتات العطر";
+      document.getElementById('editId').value = '';
+      document.getElementById('pName').value = '';
+      document.getElementById('pNotes').value = '';
+      document.getElementById('pImageUrl').value = '';
+      document.getElementById('imageFile').value = '';
+      document.getElementById('cancelEditBtn').classList.add('hidden');
+    }
+
+    addSizeRow();
+  </script>
+</body>
+</html>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VESSENS | PERFUMARIA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f6f3ee;
+      --surface: #ece6dd;
+      --card-bg: #fbf9f6;
+      --bronze: #7a5832;
+      --bronze-dark: #4f371c;
+      --bronze-light: #a88256;
+      --text: #2c241d;
+      --muted: #786d61;
+      --border: #dfd6c9;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; padding-bottom: 20px; }
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(246, 243, 238, 0.96); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px;
+    }
+    .brand-logo { display: flex; align-items: center; gap: 10px; cursor: pointer; direction: ltr; }
+    .brand-text { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+    .brand-name { font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 500; letter-spacing: 4px; color: var(--bronze-dark); }
+    .brand-sub { font-family: 'Montserrat', sans-serif; font-size: 8px; font-weight: 600; letter-spacing: 3px; color: var(--bronze); margin-top: 4px; }
+    .icon-btn { background: none; border: none; cursor: pointer; position: relative; color: var(--bronze-dark); display: flex; align-items: center; padding: 4px; }
+    .cart-badge {
+      position: absolute; top: -4px; right: -6px; background: var(--bronze-dark); color: #fbf9f6;
+      font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .section { padding: 24px 16px; }
+    .section-title { text-align: center; font-size: 21px; font-weight: 800; color: var(--bronze-dark); margin-bottom: 18px; }
+    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .cat-card {
+      position: relative; height: 175px; border-radius: 14px; overflow: hidden; cursor: pointer;
+      display: flex; flex-direction: column; justify-content: flex-end; padding: 15px; color: #fbf9f6;
+      border: 1px solid rgba(168, 130, 86, 0.35); box-shadow: 0 8px 20px rgba(79, 55, 28, 0.12);
+    }
+    .cat-card.men { background: linear-gradient(to top, rgba(44, 31, 18, 0.92), rgba(44, 31, 18, 0.25)), radial-gradient(circle at top right, #8a643b, #2b1e12); }
+    .cat-card.women { background: linear-gradient(to top, rgba(74, 48, 38, 0.9), rgba(74, 48, 38, 0.25)), radial-gradient(circle at top right, #c79c7e, #4a3026); }
+    .cat-card.bundles { grid-column: span 2; height: 140px; background: linear-gradient(to top, rgba(44, 31, 18, 0.92), rgba(44, 31, 18, 0.3)), radial-gradient(circle at center, #9c7548, #362616); }
+    .cat-card small { font-family: 'Montserrat', sans-serif; color: #e3ccb0; font-size: 10px; font-weight: 600; letter-spacing: 2px; }
+    .cat-card h3 { font-size: 19px; font-weight: 800; margin: 3px 0 6px; }
+    .cat-card span { font-size: 12px; color: #e3ccb0; text-decoration: underline; }
+    .marquee { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); color: var(--bronze-dark); padding: 11px 12px; font-weight: 700; font-size: 13px; text-align: center; }
+    .horizontal-scroll {
+      display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory;
+      scroll-behavior: smooth; padding: 4px 4px 12px; scrollbar-width: none;
+    }
+    .horizontal-scroll::-webkit-scrollbar { display: none; }
+    .product-card {
+      flex: 0 0 48%; max-width: 210px; scroll-snap-align: start;
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
+      padding: 10px; position: relative; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .badge {
+      position: absolute; top: 10px; right: 10px; background: var(--bronze-dark); color: #fbf9f6;
+      font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 20px; z-index: 2;
+    }
+    .prod-img { width: 100%; height: 130px; background: var(--surface); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; overflow: hidden; }
+    .prod-img img { width: 100%; height: 100%; object-fit: cover; }
+    .bottle-mock {
+      width: 48px; height: 85px; border-radius: 6px 6px 8px 8px;
+      background: linear-gradient(145deg, #4f371c, #291c0e); border: 1px solid #c9a679;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #e8d3b9; font-family: 'Montserrat', sans-serif; font-size: 8px; text-align: center; position: relative;
+    }
+    .bottle-mock.women-style { background: linear-gradient(145deg, #e5cbb8, #c79f84); color: #4f371c; border-color: #8c663b; }
+    .prod-title { font-size: 13px; font-weight: 700; text-align: center; margin-bottom: 2px; line-height: 1.2; }
+    .prod-notes { font-size: 10.5px; color: var(--muted); text-align: center; margin-bottom: 6px; line-height: 1.2; height: 26px; overflow: hidden; }
+    .size-select-box select {
+      width: 100%; padding: 5px; font-size: 11px; font-family: 'Cairo', sans-serif;
+      border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--bronze-dark); font-weight: 700;
+    }
+    .prod-price { text-align: center; font-weight: 800; font-size: 13px; color: var(--bronze-dark); margin: 6px 0; }
+    .prod-price del { color: var(--muted); font-weight: 400; font-size: 11px; margin-right: 4px; }
+    .add-btn {
+      width: 100%; background: var(--bronze-dark); color: #fbf9f6; border: none;
+      padding: 7px; border-radius: 6px; font-family: 'Cairo', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer;
+    }
+    .nav-arrows { display: flex; justify-content: center; gap: 12px; margin-top: 8px; }
+    .arrow-btn {
+      width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--bronze-dark);
+      background: var(--card-bg); color: var(--bronze-dark); font-size: 16px; font-weight: bold; cursor: pointer;
+    }
+    .arrow-btn.active { background: var(--bronze-dark); color: #fbf9f6; }
+    #categoryView { display: none; padding: 16px; }
+    .cat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+    .back-btn { background: var(--surface); border: 1px solid var(--border); color: var(--bronze-dark); padding: 6px 12px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .products-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    
+    .reviews-sec { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 24px 16px; margin-top: 16px; }
+    .review-card {
+      flex: 0 0 82%; max-width: 290px; scroll-snap-align: start;
+      background: var(--card-bg); border-radius: 14px; padding: 14px; border: 1px solid var(--border);
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .review-img { width: 100%; height: 140px; border-radius: 8px; object-fit: cover; margin-top: 10px; background: #eee; }
+    .chat-bubble { background: #efe9df; padding: 10px; border-radius: 10px; margin-top: 8px; font-size: 12.5px; line-height: 1.5; color: var(--text); }
+    
+    /* تصميم الفوتر (Footer) وروابط السوشيال ميديا */
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 24px 16px; text-align: center; margin-top: 30px; }
+    .social-links { display: flex; justify-content: center; gap: 14px; margin-bottom: 14px; }
+    .social-btn {
+      display: flex; align-items: center; justify-content: center; width: 42px; height: 42px;
+      border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border); color: var(--bronze-dark);
+      text-decoration: none; box-shadow: 0 4px 10px rgba(0,0,0,0.03); transition: 0.2s;
+    }
+    .social-btn:hover { background: var(--bronze-dark); color: #fbf9f6; }
+    .footer-text { font-size: 12px; color: var(--muted); }
+
+    .cart-drawer { position: fixed; inset: 0; background: rgba(44, 36, 29, 0.55); z-index: 200; display: none; justify-content: flex-end; }
+    .cart-panel { width: 88%; max-width: 380px; background: var(--bg); height: 100%; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; }
+    .cart-items { flex: 1; overflow-y: auto; margin: 14px 0; }
+    .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .whatsapp-btn { width: 100%; background: var(--bronze-dark); color: #fbf9f6; border: none; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 15px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-logo" onclick="goHome()">
+      <svg width="32" height="36" viewBox="0 0 64 72" fill="none">
+        <defs>
+          <linearGradient id="bronzeGrad" x1="0" y1="0" x2="64" y2="72" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#9e7647"/>
+            <stop offset="50%" stop-color="#694925"/>
+            <stop offset="100%" stop-color="#8c6438"/>
+          </linearGradient>
+        </defs>
+        <path d="M14 22L32 54L50 22" stroke="url(#bronzeGrad)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18 22L32 47L46 22" stroke="url(#bronzeGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M35 8C27 18 39 27 39 39C39 49 33 58 23 58C16 58 12 51 14 43" stroke="url(#bronzeGrad)" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-name">VESSENS</span>
+        <span class="brand-sub">• PERFUMARIA •</span>
+      </div>
+    </div>
+
+    <button class="icon-btn" onclick="toggleCart()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+        <line x1="3" y1="6" x2="21" y2="6"></line>
+        <path d="M16 10a4 4 0 0 1-8 0"></path>
+      </svg>
+      <span class="cart-badge" id="cartCount">0</span>
+    </button>
+  </header>
+
+  <main id="homeView">
+    <section class="section">
+      <h2 class="section-title">تسوق حسب الفئة</h2>
+      <div class="cat-grid">
+        <div class="cat-card men" onclick="openCategory('men')">
+          <small>FOR HIM</small>
+          <h3>عطور رجالي</h3>
+          <span>تسوق الآن ←</span>
+        </div>
+        <div class="cat-card women" onclick="openCategory('women')">
+          <small>FOR HER</small>
+          <h3>عطور حريمي</h3>
+          <span>تسوق الآن ←</span>
+        </div>
+        <div class="cat-card bundles" onclick="openCategory('bundles')">
+          <small>SPECIAL SETS</small>
+          <h3>BUNDLES & OFFERS</h3>
+          <span>مجموعات التوفير ←</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="marquee" id="marqueeBar">VESSENS PERFUMARIA • تركيبات عطرية فاخرة وثبات يدوم</div>
+
+    <section class="section">
+      <h2 class="section-title">عطور رجالي</h2>
+      <div class="horizontal-scroll" id="menCarousel">
+        <p style="color:var(--muted); font-size:13px; text-align:center; width:100%;">جاري التحميل...</p>
+      </div>
+      <div class="nav-arrows">
+        <button class="arrow-btn" onclick="scrollCarousel('menCarousel', 180)">→</button>
+        <button class="arrow-btn active" onclick="scrollCarousel('menCarousel', -180)">←</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">عطور حريمي</h2>
+      <div class="horizontal-scroll" id="womenCarousel">
+        <p style="color:var(--muted); font-size:13px; text-align:center; width:100%;">جاري التحميل...</p>
+      </div>
+      <div class="nav-arrows">
+        <button class="arrow-btn" onclick="scrollCarousel('womenCarousel', 180)">→</button>
+        <button class="arrow-btn active" onclick="scrollCarousel('womenCarousel', -180)">←</button>
+      </div>
+    </section>
+
+    <section class="reviews-sec">
+      <h2 class="section-title">⭐ آراء عملاء VESSENS</h2>
+      <div class="horizontal-scroll" id="reviewsCarousel">
+        <p style="color:var(--muted); font-size:13px; text-align:center; width:100%;">جاري التحميل...</p>
+      </div>
+    </section>
+  </main>
+
+  <section id="categoryView">
+    <div class="cat-header">
+      <button class="back-btn" onclick="goHome()">→ الرئيسية</button>
+      <h2 id="catTitle" style="font-size: 18px; font-weight: 800; color: var(--bronze-dark);">عطور</h2>
+      <span id="itemsCount" style="font-size: 12px; color: var(--muted);">0 منتج</span>
+    </div>
+    <div class="products-grid" id="categoryGrid"></div>
+  </section>
+
+  <!-- الفوتر مع أيقونات إنستجرام، تيك توك، وواتساب -->
+  <footer>
+    <div class="social-links">
+      <!-- WhatsApp Link -->
+      <a id="footerWaBtn" href="https://wa.me/201000000000" target="_blank" class="social-btn" title="واتساب">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+      </a>
+      <!-- Instagram Link -->
+      <a id="footerInstaBtn" href="https://instagram.com" target="_blank" class="social-btn" title="إنستجرام">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+      </a>
+      <!-- TikTok Link -->
+      <a id="footerTiktokBtn" href="https://tiktok.com" target="_blank" class="social-btn" title="تيك توك">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+      </a>
+    </div>
+    <p class="footer-text">جميع الحقوق محفوظة © VESSENS PERFUMARIA 2026</p>
+  </footer>
+
+  <div class="cart-drawer" id="cartDrawer" onclick="if(event.target===this) toggleCart()">
+    <div class="cart-panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:10px;">
+        <h3 style="color:var(--bronze-dark);">سلة مشتريات VESSENS</h3>
+        <button onclick="toggleCart()" style="border:none; background:none; font-size:20px; cursor:pointer;">✕</button>
+      </div>
+      <div class="cart-items" id="cartItemsList"></div>
+      <div>
+        <div style="display:flex; justify-content:space-between; font-weight:800; margin-bottom:12px; color:var(--bronze-dark);">
+          <span>الإجمالي:</span>
+          <span id="cartTotal">0 EGP</span>
+        </div>
+        <button class="whatsapp-btn" onclick="checkoutWhatsApp()">إتمام الطلب عبر واتساب</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://vhizqkodylhobljpetgu.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_WC10R2Y80AB_rRMO4kQsXg_ZKYB8aBn';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let products = [];
+    let storeWhatsapp = "201009757576";
+    let cart = [];
+
+    async function initStore() {
+      // جلب إعدادات المتجر وروابط التواصل الاجتماعي من قاعدة البيانات
+      const { data: settings } = await sb.from('vessens_settings').select('*').eq('id', 1).single();
+      if (settings) {
+        storeWhatsapp = settings.whatsapp_phone || "201009757576";
+        document.getElementById('marqueeBar').innerText = settings.marquee_text || '';
+        
+        // تحديث الروابط ديناميكياً
+        if(settings.whatsapp_phone) {
+          document.getElementById('footerWaBtn').href = `https://wa.me/${settings.whatsapp_phone}`;
+        }
+        if(settings.instagram_url) {
+          document.getElementById('footerInstaBtn').href = settings.instagram_url;
+        }
+        if(settings.tiktok_url) {
+          document.getElementById('footerTiktokBtn').href = settings.tiktok_url;
+        }
+      }
+
+      const { data: prods } = await sb.from('vessens_products').select('*').order('id', { ascending: false });
+      products = prods || [];
+
+      const menProds = products.filter(p => p.cat === 'men');
+      const womenProds = products.filter(p => p.cat === 'women');
+
+      document.getElementById('menCarousel').innerHTML = menProds.length > 0 
+        ? menProds.map(createCardHTML).join('') 
+        : '<p style="color:var(--muted); font-size:13px; text-align:center; width:100%;">لا توجد عطور رجالي</p>';
+
+      document.getElementById('womenCarousel').innerHTML = womenProds.length > 0 
+        ? womenProds.map(createCardHTML).join('') 
+        : '<p style="color:var(--muted); font-size:13px; text-align:center; width:100%;">لا توجد عطور حريمي</p>';
+
+      const { data: revs } = await sb.from('vessens_reviews').select('*').order('id', { ascending: false });
+      document.getElementById('reviewsCarousel').innerHTML = (revs && revs.length > 0) ? revs.map(r => `
+        <div class="review-card">
+          <div>
+            <strong style="color:var(--bronze-dark); font-size:13px;">${r.customer_name}</strong>
+            <span style="font-size:10px; color:var(--muted); display:block;">• ${r.platform || 'WhatsApp'}</span>
+            <div class="chat-bubble">"${r.message}"</div>
+          </div>
+          ${r.image_url ? `<img src="${r.image_url}" class="review-img" alt="Review screenshot">` : ''}
+        </div>
+      `).join('') : '<p style="color:var(--muted); font-size:13px; text-align:center; width:100%;">لا توجد تقييمات مضافة بعد</p>';
+    }
+
+    function createCardHTML(p) {
+      const isWomen = p.cat === 'women';
+      let sizes = p.sizes_prices;
+      if (typeof sizes === 'string') { try { sizes = JSON.parse(sizes); } catch(e) { sizes = []; } }
+      if (!Array.isArray(sizes)) sizes = [];
+
+      const firstSize = sizes[0] || { size: 'افتراضي', price: 0 };
+      const imgContent = p.image_url
+        ? `<img src="${p.image_url}" alt="${p.name}">`
+        : `<div class="bottle-mock ${isWomen ? 'women-style' : ''}">VESSENS</div>`;
+
+      return `
+        <div class="product-card" id="prod-card-${p.id}">
+          ${p.tag ? `<span class="badge">${p.tag}</span>` : ''}
+          <div>
+            <div class="prod-img">${imgContent}</div>
+            <div class="prod-title">${p.name}</div>
+            <div class="prod-notes">${p.notes || ''}</div>
+            
+            <div class="size-select-box" style="margin-top:6px;">
+              <select onchange="updatePrice(${p.id}, this.value)">
+                ${sizes.map((s, idx) => `<option value="${idx}">${s.size} (${s.price} EGP)</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div>
+            <div class="prod-price" id="price-display-${p.id}">
+              ${firstSize.oldPrice ? `<del>${firstSize.oldPrice} EGP</del>` : ''}
+              <span>${firstSize.price}</span> EGP
+            </div>
+            <button class="add-btn" onclick="addToCartWithOptions(${p.id})">أضف للسلة +</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function updatePrice(productId, sizeIndex) {
+      const p = products.find(prod => prod.id === productId);
+      if (!p) return;
+      let sizes = p.sizes_prices;
+      if (typeof sizes === 'string') { try { sizes = JSON.parse(sizes); } catch(e) { sizes = []; } }
+      const selected = sizes[sizeIndex];
+      document.getElementById(`price-display-${productId}`).innerHTML = `
+        ${selected.oldPrice ? `<del>${selected.oldPrice} EGP</del>` : ''}
+        <span>${selected.price}</span> EGP
+      `;
+    }
+
+    function addToCartWithOptions(productId) {
+      const p = products.find(prod => prod.id === productId);
+      const card = document.getElementById(`prod-card-${productId}`);
+      const select = card ? card.querySelector('select') : null;
+      const selectedIndex = select ? select.value : 0;
+      
+      let sizes = p.sizes_prices;
+      if (typeof sizes === 'string') { try { sizes = JSON.parse(sizes); } catch(e) { sizes = []; } }
+      const selectedSizeObj = sizes[selectedIndex] || { size: 'افتراضي', price: 0 };
+
+      const cartKey = `${p.id}-${selectedSizeObj.size}`;
+      const existing = cart.find(c => c.cartKey === cartKey);
+      
+      if (existing) existing.qty++;
+      else cart.push({ cartKey, id: p.id, name: p.name, size: selectedSizeObj.size, price: selectedSizeObj.price, qty: 1 });
+      
+      updateCartUI();
+      toggleCart();
+    }
+
+    function scrollCarousel(id, amount) {
+      const el = document.getElementById(id);
+      if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+
+    function openCategory(cat) {
+      const titles = { men: "عطور رجالي (For Him)", women: "عطور حريمي (For Her)", bundles: "العروض والباكدجات" };
+      document.getElementById('catTitle').innerText = titles[cat];
+      document.getElementById('homeView').style.display = 'none';
+      document.getElementById('categoryView').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      const filtered = products.filter(p => p.cat === cat);
+      document.getElementById('itemsCount').innerText = `${filtered.length} منتج`;
+      document.getElementById('categoryGrid').innerHTML = filtered.length > 0 
+        ? filtered.map(createCardHTML).join('') 
+        : '<p style="text-align:center; color:var(--muted); grid-column:span 2; padding:40px;">لا توجد منتجات حالياً</p>';
+    }
+
+    function goHome() {
+      document.getElementById('categoryView').style.display = 'none';
+      document.getElementById('homeView').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateCartUI() {
+      const count = cart.reduce((sum, i) => sum + i.qty, 0);
+      const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      document.getElementById('cartCount').innerText = count;
+      document.getElementById('cartTotal').innerText = `${total} EGP`;
+
+      document.getElementById('cartItemsList').innerHTML = cart.length === 0
+        ? '<p style="text-align:center; color:#786d61; margin-top:40px;">السلة فارغة حالياً</p>'
+        : cart.map(item => `
+            <div class="cart-item">
+              <div>
+                <strong>${item.name}</strong><br>
+                <small style="color:var(--muted);">الحجم: ${item.size} | ${item.price} EGP × ${item.qty}</small>
+              </div>
+              <button onclick="removeFromCart('${item.cartKey}')" style="border:none; background:#f2e2de; color:#9e4736; padding:4px 8px; border-radius:6px; cursor:pointer; font-weight:700;">حذف</button>
+            </div>
+          `).join('');
+    }
+
+    function removeFromCart(cartKey) {
+      cart = cart.filter(i => i.cartKey !== cartKey);
+      updateCartUI();
+    }
+
+    function toggleCart() {
+      const drawer = document.getElementById('cartDrawer');
+      if(drawer) {
+        drawer.style.display = drawer.style.display === 'flex' ? 'none' : 'flex';
+        updateCartUI();
+      }
+    }
+
+    function checkoutWhatsApp() {
+      if (cart.length === 0) return alert('أضف عطور للسلة الأول!');
+      let msg = "مرحباً VESSENS، أريد طلب العطور التالية:\n\n";
+      cart.forEach(i => msg += `- ${i.name} (حجم: ${i.size}) × ${i.qty} = ${i.price * i.qty} EGP\n`);
+      const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      msg += `\nالإجمالي: ${total} EGP`;
+      window.open(`https://wa.me/${storeWhatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+
+    initStore();
+  </script>
+</body>
+</html>
